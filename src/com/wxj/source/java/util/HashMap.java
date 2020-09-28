@@ -314,7 +314,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         public final String toString() { return key + "=" + value; }
 
         public final int hashCode() {
-//            （^）,其主要是对两个操作数进行位的异或运算，相同取0，相反取1。即两操作数相同时，互相抵消。
+//            （^）,其主要是对两个操作数(两个数转为二进制)进行位的异或运算，相同取0，相反取1。即两操作数相同时，互相抵消。
             return Objects.hashCode(key) ^ Objects.hashCode(value); //
         }
 
@@ -358,7 +358,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     static final int hash(Object key) {
         /**
          *   >>>表示无符号右移，也叫逻辑右移，即若该数为正，则高位补0，而若该数为负数，则右移后高位同样补0
-         *   ^  异或运算  相同 为1  不同 为0
+         *  （^）,其主要是对两个操作数(两个数转为二进制)进行位的异或运算，相同取0，相反取1。即两操作数相同时，互相抵消。
          */
         int h;
         return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);
@@ -395,7 +395,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * Returns k.compareTo(x) if x matches kc (k's screened comparable
      * class), else 0.
      *
-     * 如果 x 匹配 kc
+     * 如果 x 匹配 kc,
      */
     @SuppressWarnings({"rawtypes","unchecked"}) // for cast to Comparable
     static int compareComparables(Class<?> kc, Object k, Object x) {
@@ -423,6 +423,11 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * necessary. When allocated, length is always a power of two.
      * (We also tolerate length zero in some operations to allow
      * bootstrapping mechanics that are currently not needed.)
+     *
+     *
+     *   表，在第一次使用时初始化，并将其大小调整为必要的。分配时，长度总是2的幂。
+     *
+     * （在某些操作中，我们也允许长度为零，以允许当前不需要的引导机制。）
      */
     transient Node<K,V>[] table;
 
@@ -531,6 +536,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     final void putMapEntries(Map<? extends K, ? extends V> m, boolean evict) {
         int s = m.size();
         if (s > 0) {
+            // table transient Node<K,V>[] table;  定义后首次使用
             if (table == null) { // pre-size
                 float ft = ((float)s / loadFactor) + 1.0F;
                 int t = ((ft < (float)MAXIMUM_CAPACITY) ?
@@ -596,7 +602,11 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * @return the node, or null if none
      */
     final Node<K,V> getNode(int hash, Object key) {
-        Node<K,V>[] tab; Node<K,V> first, e; int n; K k;
+
+        Node<K,V>[] tab; //
+        Node<K,V> first, e; //
+        int n;
+        K k;
         if ((tab = table) != null && (n = tab.length) > 0 &&
             (first = tab[(n - 1) & hash]) != null) {
             if (first.hash == hash && // always check first node
@@ -652,12 +662,31 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * @param onlyIfAbsent if true, don't change existing value
      * @param evict if false, the table is in creation mode.
      * @return previous value, or null if none
+     *
+     *  hash for key 对key 进程hash 实际是这个 (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16)
+     *  key the key  就是对应put的key 值
+     *  value the value to put  就是put的key 对应的value 值
+     *  onlyIfAbsent 为 true , 不改变value
+     *  evict 为false, table 处于创建模式
+     *
+     *  HashMap 的put 方法实现 ，调用 putVal访问。
+     *
+     *  putVal(hash(key), key, value, false, true);
      */
     final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
                    boolean evict) {
-        Node<K,V>[] tab; Node<K,V> p; int n, i;
+
+        Node<K,V>[] tab;
+        Node<K,V> p;
+        int n, i;
+
+//        定义的成员变量 transient Node<K,V>[] table;
+//        将table 赋值给 tab 后 ，如果tab 为 null  或者局部变量 tab长度 赋值给 n ，如果 n == 0 ,
+//        简而言之，  table == null 或者 tab.length == 0  时 ，调用 resize()，并将返回值赋给 n 。
         if ((tab = table) == null || (n = tab.length) == 0)
             n = (tab = resize()).length;
+
+        //
         if ((p = tab[i = (n - 1) & hash]) == null)
             tab[i] = newNode(hash, key, value, null);
         else {
