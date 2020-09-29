@@ -21,8 +21,20 @@ public class TestHashMap {
         HashMap<String,Object> hashMap = new HashMap<>();
 
 //        HashMap.compareComparables(kc.getClass(),k,x);
-        System.out.println(hash("aaa"));
+//        System.out.println(hash("aaa"));
 
+        Persion persion;
+
+//        hashMap.put("ab",persion);
+//        System.out.println(persion.toString()); // persion 没有初始化
+
+
+        for (int binCount = 0; ; ++binCount) {
+
+            if(binCount >= 8 - 1){
+                System.out.println(binCount);
+            }
+        }
 
 
     }
@@ -45,5 +57,22 @@ public class TestHashMap {
 
 
 
+    class Persion {
+        private final String name;
+        private String age;
+
+        public Persion(String name, String age) {
+            this.name = name;
+            this.age = age;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String getAge() {
+            return age;
+        }
+    }
 
 }
