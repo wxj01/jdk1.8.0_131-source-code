@@ -676,34 +676,52 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
                    boolean evict) {
 
-        Node<K,V>[] tab;
-        Node<K,V> p;
-        int n, i;
+        Node<K,V>[] tab; // 定义一个Node 数组
+        Node<K,V> p; // 定义一个 类型为Node 的 p 节点
+        int n, i; //定义 两个 变量
 
-//        定义的成员变量 transient Node<K,V>[] table;
+//        成员变量 transient Node<K,V>[] table;
 //        将table 赋值给 tab 后 ，如果tab 为 null  或者局部变量 tab长度 赋值给 n ，如果 n == 0 ,
 //        简而言之，  table == null 或者 tab.length == 0  时 ，调用 resize()，并将返回值赋给 n 。
+//        说白了就是：HashMap 为空时，初始化HashMap，并调用扩容方法后，table 则是 Node<K,V>[16] ，大小为16  n == 16，
+//        tab 也是 Node<K,V>[16] ，大小为16
         if ((tab = table) == null || (n = tab.length) == 0)
             n = (tab = resize()).length;
 
-        //
+        // (n - 1) & hash   两个数 转成 二进制 进行运算，如 10000001  和 10000000   得到 10000000
+        // (n - 1) & hash 运算后 tab[i = (n - 1) & hash] 为null
+        // 1.初始化后 n 为 16 ,则 (16-1) & hash , tab数组的tab[(16-1) & hash]如果为null
         if ((p = tab[i = (n - 1) & hash]) == null)
+            // newNode return new Node<>(hash, key, value, next);
+            // 调用内部类Node<K,V>的构造方法 创建一个Node对象，并将赋予tab[i]
             tab[i] = newNode(hash, key, value, null);
         else {
+            // tab[i = (n - 1) & hash] 不为null,
+            // tab数组的 tab[(16-1) & hash]不为空， (16-1) & hash  不一定是最后一个元素。
+            // 节点p 初始化后为 tab[(16-1) & hash]
+            // 定义一个Node<K,V> e; 和 泛型 K k ;
             Node<K,V> e; K k;
+            // 节点p的hash 值后 hashMap.put的key-value 的hash(key) 相同，并且 p.key 等于 hashMap.put 的key ,
+            // 满足条件后将 p 节点 赋值给 e 节点。不满足的话走 下一个 if
             if (p.hash == hash &&
                 ((k = p.key) == key || (key != null && key.equals(k))))
                 e = p;
+            // 判断 节点p 是否是 TreeNode。 instanceof 严格来说是Java中的一个双目运算符，用来测试一个对象是否为一个类的实例
             else if (p instanceof TreeNode)
                 e = ((TreeNode<K,V>)p).putTreeVal(this, tab, hash, key, value);
             else {
                 for (int binCount = 0; ; ++binCount) {
+                    // 节点p的下一个节点指向 e 节点，如果p的下一个节点为空
                     if ((e = p.next) == null) {
+                        // 创建一个新的Node对象 p节点指向 该创建的Node节点
                         p.next = newNode(hash, key, value, null);
-                        if (binCount >= TREEIFY_THRESHOLD - 1) // -1 for 1st
+                        // 容器的大小 >= 8-1 时  容器的元素将变成树结构
+                        if (binCount >= TREEIFY_THRESHOLD - 1) // -1 for 1st   TREEIFY_THRESHOLD 值为 8
+//                            简而言之：容器要变树结构
                             treeifyBin(tab, hash);
                         break;
                     }
+                    //Node<K,V> e; 和 hashMap put 的key-value  hash 和 key 相同 则 跳出循环。
                     if (e.hash == hash &&
                         ((k = e.key) == key || (key != null && key.equals(k))))
                         break;
@@ -719,9 +737,20 @@ public class HashMap<K,V> extends AbstractMap<K,V>
             }
         }
         ++modCount;
+        /** 触发扩容的条件，
+         *  size: The number of key-value mappings contained in this map
+         *  threshold:The next size value at which to resize (capacity * load factor)
+         *
+         *  size : map 的中元素的个数；
+         *  threshold:要调整大小的下一个大小值（容量*负载系数）
+         */
+
         if (++size > threshold)
             resize();
+
+        //   void afterNodeInsertion(boolean evict) { }  空函数
         afterNodeInsertion(evict);
+
         return null;
     }
 
@@ -733,6 +762,10 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * with a power of two offset in the new table.
      *
      * @return the table
+     *
+     * 扩容机制：
+     * 初始化或加倍容器大小，如容器为空，在满足大小阀值下进行分配大小，
+     * 否则，因为我们是使用2的幂扩容，各个容器的元素要么保持原来的索引，要么在扩容后的新容器中删除。
      */
     final Node<K,V>[] resize() {
         Node<K,V>[] oldTab = table;
@@ -751,6 +784,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         else if (oldThr > 0) // initial capacity was placed in threshold
             newCap = oldThr;
         else {               // zero initial threshold signifies using defaults
+            // 初始化HashMap 的时候，走这里，容器大小默认 16 ，扩容大小是 0.75 * 16 = 12
             newCap = DEFAULT_INITIAL_CAPACITY;
             newThr = (int)(DEFAULT_LOAD_FACTOR * DEFAULT_INITIAL_CAPACITY);
         }
@@ -762,7 +796,14 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         threshold = newThr;
         @SuppressWarnings({"rawtypes","unchecked"})
             Node<K,V>[] newTab = (Node<K,V>[])new Node[newCap];
+
+        /**
+         *  table :transient Node<K,V>[] table;
+         * 1. hashMap 初始化时（不是在爱new HashMap触发，而是在put元素时，并hashmap容器大小为0 ）
+         *    table 为一个 大小16数组
+         */
         table = newTab;
+
         if (oldTab != null) {
             for (int j = 0; j < oldCap; ++j) {
                 Node<K,V> e;
@@ -811,6 +852,9 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     /**
      * Replaces all linked nodes in bin at index for given hash unless
      * table is too small, in which case resizes instead.
+     *
+     * 容器中的 hash 索引将替代 链接节点，在这种情况下调整容器大小  除非table 太小
+     * 简而言之：HashMap 要变树结构
      */
     final void treeifyBin(Node<K,V>[] tab, int hash) {
         int n, index; Node<K,V> e;
