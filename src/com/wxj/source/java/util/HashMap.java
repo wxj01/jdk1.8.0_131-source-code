@@ -680,26 +680,34 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         Node<K,V> p; // 定义一个 类型为Node 的 p 节点
         int n, i; //定义 两个 变量
 
-//        成员变量 transient Node<K,V>[] table;
-//        将table 赋值给 tab 后 ，如果tab 为 null  或者局部变量 tab长度 赋值给 n ，如果 n == 0 ,
-//        简而言之，  table == null 或者 tab.length == 0  时 ，调用 resize()，并将返回值赋给 n 。
-//        说白了就是：HashMap 为空时，初始化HashMap，并调用扩容方法后，table 则是 Node<K,V>[16] ，大小为16  n == 16，
-//        tab 也是 Node<K,V>[16] ，大小为16
+        /**
+         * 成员变量 transient Node<K,V>[] table;
+        将table 赋值给 tab 后 ，如果tab 为 null  或者局部变量 tab长度 赋值给 n ，如果 n == 0 ,
+        简而言之，  table == null 或者 tab.length == 0  时 ，调用 resize()，并将返回值赋给 n 。
+        说白了就是：HashMap 为空时，初始化HashMap，并调用扩容方法后，table 则是 Node<K,V>[16] ，大小为16  n == 16，
+        tab 也是 Node<K,V>[16] ，大小为16
+         */
         if ((tab = table) == null || (n = tab.length) == 0)
             n = (tab = resize()).length;
 
-        // (n - 1) & hash   两个数 转成 二进制 进行运算，如 10000001  和 10000000   得到 10000000
-        // (n - 1) & hash 运算后 tab[i = (n - 1) & hash] 为null
-        // 1.初始化后 n 为 16 ,则 (16-1) & hash , tab数组的tab[(16-1) & hash]如果为null
+        /**
+         * (n - 1) & hash   两个数 转成 二进制 进行运算，如 10000001  和 10000000   得到 10000000
+         (n - 1) & hash 运算后 tab[i = (n - 1) & hash] 为null
+         1.初始化后 n 为 16 ,则 (16-1) & hash , tab数组的tab[(16-1) & hash]如果为null
+         */
         if ((p = tab[i = (n - 1) & hash]) == null)
-            // newNode return new Node<>(hash, key, value, next);
-            // 调用内部类Node<K,V>的构造方法 创建一个Node对象，并将赋予tab[i]
+            /**
+             *  newNode return new Node<>(hash, key, value, next);
+             * 调用内部类Node<K,V>的构造方法 创建一个Node对象，并将赋予tab[i]
+             */
             tab[i] = newNode(hash, key, value, null);
         else {
-            // tab[i = (n - 1) & hash] 不为null,
-            // tab数组的 tab[(16-1) & hash]不为空， (16-1) & hash  不一定是最后一个元素。
-            // 节点p 初始化后为 tab[(16-1) & hash]
-            // 定义一个Node<K,V> e; 和 泛型 K k ;
+            /**
+             * tab[i = (n - 1) & hash] 不为null,
+             * tab数组的 tab[(16-1) & hash]不为空， (16-1) & hash  不一定是最后一个元素。
+             * 节点p 初始化后为 tab[(16-1) & hash]
+             * 定义一个Node<K,V> e; 和 泛型 K k ;
+             */
             Node<K,V> e; K k;
             // 节点p的hash 值后 hashMap.put的key-value 的hash(key) 相同，并且 p.key 等于 hashMap.put 的key ,
             // 满足条件后将 p 节点 赋值给 e 节点。不满足的话走 下一个 if
@@ -742,7 +750,8 @@ public class HashMap<K,V> extends AbstractMap<K,V>
          *  threshold:The next size value at which to resize (capacity * load factor)
          *
          *  size : map 的中元素的个数；
-         *  threshold:要调整大小的下一个大小值（容量*负载系数）
+         *  threshold: 当hashMap.sie()==16时，threshold值12
+         *  要调整大小的下一个大小值（容量*负载系数）
          */
 
         if (++size > threshold)
@@ -769,19 +778,37 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      */
     final Node<K,V>[] resize() {
         Node<K,V>[] oldTab = table;
-        int oldCap = (oldTab == null) ? 0 : oldTab.length;
-        int oldThr = threshold;
+        // oldCap  为旧 Node<K,V>[] oldTab数组大小，其实也就是HashMap.size()的大小，
+        //1.未初始化的HashMap时，table大小为null,
+        //2.第一次初始化后，table大小为16 ,假如 oldCap == 16
+        int oldCap = (oldTab == null) ? 0 : oldTab.length; // 16
+        int oldThr = threshold; // 理解为旧地址（旧指针），假如就是指向hashMap的 12
         int newCap, newThr = 0;
+
+        /**
+         * 举例：oldCap == 16 ，threshold==16  newCap==0  newThr==0
+         */
+
+        //Node<K,V>[] table 不为空，理解为，HashMap已经有初始化并且有大小，开始扩容。
         if (oldCap > 0) {
+            // hashMap的大小 >=   1 << 30  容器最大值时
             if (oldCap >= MAXIMUM_CAPACITY) {
+                // 将 public static final int MAX_VALUE = 2147483647 赋值 threshold
                 threshold = Integer.MAX_VALUE;
                 return oldTab;
             }
+
+            // hashMap的扩容前的大小右移 1 ，并赋值newCap, (1 << 4)  =< newCap <  (1 << 30)
+            // newCap = oldCap << 1 ,扩容按2的幂进行的，这里newCap 16 32 64 128 ...
             else if ((newCap = oldCap << 1) < MAXIMUM_CAPACITY &&
                      oldCap >= DEFAULT_INITIAL_CAPACITY)
+                // 旧地址 扩容 2倍后 赋值 newThr
+                // oldThr << 1; 旧指针地址也是 2的幂 进行扩展。
+                // 我的理解，假如地址也是1、2、3、... 则newThr指向hashMap扩容后得到的hashMap的最后一个元素的地址
                 newThr = oldThr << 1; // double threshold
         }
-        else if (oldThr > 0) // initial capacity was placed in threshold
+        else if (oldThr > 0) // initial capacity was placed in threshold 初始容量处于阈值
+            // 旧指针大于 0 ，将旧指针大小赋予newCap
             newCap = oldThr;
         else {               // zero initial threshold signifies using defaults
             // 初始化HashMap 的时候，走这里，容器大小默认 16 ，扩容大小是 0.75 * 16 = 12
@@ -793,9 +820,15 @@ public class HashMap<K,V> extends AbstractMap<K,V>
             newThr = (newCap < MAXIMUM_CAPACITY && ft < (float)MAXIMUM_CAPACITY ?
                       (int)ft : Integer.MAX_VALUE);
         }
+
+        // 这里 newThr 是指向扩容后的HashMap 的最后一个元素的地址，这里例子 16 >> 1 后，newThr 为 24
         threshold = newThr;
         @SuppressWarnings({"rawtypes","unchecked"})
-            Node<K,V>[] newTab = (Node<K,V>[])new Node[newCap];
+
+        /**
+         *  创建扩容后的Node<K,V>[] newTab,并将newTab 赋给 table
+          */
+                Node<K,V>[] newTab = (Node<K,V>[])new Node[newCap];
 
         /**
          *  table :transient Node<K,V>[] table;
@@ -804,8 +837,13 @@ public class HashMap<K,V> extends AbstractMap<K,V>
          */
         table = newTab;
 
+        /**
+         * 扩容后的的newTab , 将 oldTab 进行赋值 newTab 。
+         *
+         */
         if (oldTab != null) {
             for (int j = 0; j < oldCap; ++j) {
+                //定义个 e 节点
                 Node<K,V> e;
                 if ((e = oldTab[j]) != null) {
                     oldTab[j] = null;
